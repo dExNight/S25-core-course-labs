@@ -1,0 +1,37 @@
+docker_edition: 'ce'
+
+# Docker package state
+docker_packages_state: present
+
+# Basic docker packages
+docker_packages:
+  - "docker-{{ docker_edition }}"
+  - "docker-{{ docker_edition }}-cli"
+  - "docker-{{ docker_edition }}-rootless-extras"
+
+# Docker service configuration
+docker_service_state: started
+docker_service_enabled: true
+docker_restart_handler_state: restarted
+
+# Docker Compose configuration
+docker_install_compose: true
+docker_compose_version: "v2.21.0"
+docker_compose_path: /usr/local/bin/docker-compose
+
+# Repository configuration
+docker_repo_url: https://download.docker.com/linux
+docker_apt_release_channel: stable
+docker_apt_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+# List of users to be added to docker group
+# By default, add the current user (defined in inventory or playbook)
+docker_users: []
+
+# Docker daemon configuration
+docker_daemon_options:
+  storage-driver: "overlay2"
+  log-opts:
+    max-size: "100m"
+  live-restore: true
+  userland-proxy: false

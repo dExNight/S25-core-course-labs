@@ -1,0 +1,31 @@
+---
+- name: Include Docker installation tasks
+  include_tasks: install_docker.yml
+  tags: ['docker']
+
+- name: Include Docker Compose installation tasks
+  include_tasks: install_compose.yml
+  tags: ['docker-compose']
+  when: docker_install_compose | bool
+
+- name: Add user to docker group
+  user:
+    name: "{{ ansible_user_id }}"
+    groups: docker
+    append: yes
+  tags: ['docker', 'configuration']
+
+- name: Enable Docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+  tags: ['docker', 'service']
+
+- name: Configure Docker daemon
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+  notify: Restart Docker
+  tags: ['docker', 'configuration']

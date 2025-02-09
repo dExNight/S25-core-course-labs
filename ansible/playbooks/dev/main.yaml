@@ -1,0 +1,104 @@
+---
+- name: Install and configure Docker
+  hosts: docker_hosts
+  become: true
+  
+  vars:
+    docker_users:
+      - "{{ lookup('env', 'USER') }}"
+    
+    docker_daemon_options:
+      storage-driver: "overlay2"
+      log-opts:
+        max-size: "100m"
+        max-file: "3"
+      live-restore: true
+      userland-proxy: false
+      no-new-privileges: true
+      
+  pre_tasks:
+    # Remove problematic repositories
+    - name: Remove problematic repositories
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /etc/apt/sources.list.d/hashicorp.list
+        - /etc/apt/sources.list.d/steam.list  # Added Steam repository
+      when: ansible_os_family == "Debian"
+      
+    # Clean and recreate apt lists
+    - name: Clean apt lists
+      file:
+        path: /var/lib/apt/lists/
+        state: absent
+      when: ansible_os_family == "Debian"
+
+    - name: Create apt lists directory
+      file:
+        path: /var/lib/apt/lists/
+        state: directory
+        mode: '0755'
+      when: ansible_os_family == "Debian"
+      
+    # Handle problematic keys before updating
+    - name: Remove problematic repository files
+      file:
+        path: "/etc/apt/sources.list.d/{{ item }}"
+        state: absent
+      with_items:
+        - steam.list
+      when: ansible_os_family == "Debian"
+
+    # Update package cache with extra reliability measures
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+      register: apt_update
+      retries: 5
+      delay: 2
+      until: apt_update is success
+      when: ansible_os_family == "Debian"
+      
+    # Install prerequisites with error handling
+    - name: Install basic required packages
+      apt:
+        name: "{{ item }}"
+        state: present
+        force_apt_get: yes
+      loop:
+        - python3
+        - python3-pip
+        - ca-certificates
+        - curl
+        - gnupg
+      register: pkg_install
+      retries: 3
+      delay: 5
+      until: pkg_install is success
+      when: ansible_os_family == "Debian"
+
+  roles:
+    - role: docker
+      tags: 
+        - docker
+        - installation
+
+  post_tasks:
+    - name: Check Docker service status
+      service_facts:
+      register: service_state
+      
+    - name: Verify Docker service is running
+      debug:
+        msg: "Docker service is {{ service_state.ansible_facts.services['docker.service'].state }}"
+      
+    - name: Verify Docker Compose installation
+      command: docker-compose --version
+      register: compose_version
+      changed_when: false
+      
+    - name: Display Docker Compose version
+      debug:
+        var: compose_version.stdout

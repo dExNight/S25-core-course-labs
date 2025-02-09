@@ -1,0 +1,10 @@
+{
+  "storage-driver": "{{ docker_daemon_options.storage_driver | default('overlay2') }}",
+  "log-driver": "{{ docker_daemon_options.log_driver | default('json-file') }}",
+  "log-opts": {
+    "max-size": "{{ docker_daemon_options.log_opts.max_size | default('100m') }}",
+    "max-file": "{{ docker_daemon_options.log_opts.max_file | default('3') }}"
+  },
+  "userland-proxy": {{ docker_daemon_options.userland_proxy | default(false) | lower }},
+  "live-restore": {{ docker_daemon_options.live_restore | default(true) | lower }}
+}

@@ -1,0 +1,11 @@
+all:
+  children:
+    docker_hosts:
+      hosts:
+        localhost:
+          ansible_connection: local  # Use local connection
+          ansible_python_interpreter: /usr/bin/python3  # Specify Python interpreter
+      vars:
+        # Variables specific to docker hosts
+        docker_install_compose: true
+        docker_compose_version: "v2.21.0"
